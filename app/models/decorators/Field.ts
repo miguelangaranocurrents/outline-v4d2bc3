@@ -1,6 +1,8 @@
 import type Model from "../base/Model";
 
-const fields = new Map<string, (string | number | symbol)[]>();
+// Keyed by the class prototype rather than the class name: minified builds can
+// give unrelated classes the same `name`, which would merge their field lists.
+const fields = new WeakMap<object, (string | number | symbol)[]>();
 
 /**
  * Returns the keys recorded as serializable fields on a model.
@@ -17,8 +19,8 @@ export const getFieldsForModel = <T extends Model>(target: T) =>
  * @param model the model class to inspect.
  * @returns the keys decorated with @Field.
  */
-export function getFieldsForModelClass(model: { name: string }) {
-  return fields.get(model.name) ?? [];
+export function getFieldsForModelClass(model: Function) {
+  return fields.get(model.prototype) ?? [];
 }
 
 /**
@@ -29,8 +31,7 @@ export function getFieldsForModelClass(model: { name: string }) {
  * @param propertyKey the key to record as a field.
  */
 const Field = (target: Model, propertyKey: string | symbol) => {
-  const className = target.constructor.name;
-  fields.set(className, [...(fields.get(className) ?? []), propertyKey]);
+  fields.set(target, [...(fields.get(target) ?? []), propertyKey]);
 };
 
 export default Field;
